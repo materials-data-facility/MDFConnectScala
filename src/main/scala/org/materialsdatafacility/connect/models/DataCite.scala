@@ -26,15 +26,45 @@ case class DataCite(title: Seq[String], authors: Seq[String],
           )
         }
 
+        val titles = dc.title map{title =>
+          Json.obj("title"->title)
+        }
+
         val (familyName, given) = extractNameParts(dc.authors.head)
 
         val defaultPublicationYear = new DateTime().year().get()
-        Json.obj(
-          "titles" -> dc.title,
+
+        // Basic object with the required fields
+        val basicObj = Json.obj(
+          "titles" -> JsArray(titles),
           "creators" -> JsArray(creators),
           "publisher" -> JsString(dc.publisher.getOrElse("Materials Data Facility")),
           "publicationYear" -> JsString(dc.publication_year.getOrElse(defaultPublicationYear).toString)
         )
+
+        // Extend with optional properties
+        val objWithDescription = if(dc.description.isDefined) basicObj ++ Json.obj("descriptions"-> JsArray(Seq(Json.obj(
+          "description" -> JsString(dc.description.get),
+          "descriptionType"-> JsString("Other")
+        )))) else basicObj
+
+        val objWithResourceType = if(dc.resource_type.isDefined) objWithDescription ++ Json.obj(
+          "resourceType"-> Json.obj("resourceType"->dc.resource_type.get,
+            "resourceTypeGeneral"-> JsString("Dataset"))) else objWithDescription
+
+        val objWithDOI = if(dc.dataset_doi.isDefined) objWithResourceType ++ Json.obj(
+          "identifier"->Json.obj(
+            "identifier"->dc.dataset_doi.get,
+            "identifierType" -> "DOI")) else objWithResourceType
+
+        val relatedDOIEntry = if(dc.related_dois.isDefined) dc.related_dois.get map{doi => Json.obj(
+          "relatedIdentifier"->doi,
+          "relatedIdentifierType"->"DOI",
+          "relationType"-> "IsPartOf"
+        )} else List()
+
+        if(dc.related_dois.isDefined) objWithDOI ++ Json.obj(
+          "relatedIdentifiers"-> JsArray(relatedDOIEntry)) else objWithDOI
       }
     }
 

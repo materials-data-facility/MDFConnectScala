@@ -14,9 +14,13 @@ class DataCiteSpec extends Specification{
         val bar = Json.prettyPrint(foo)
         val currentYear = new DateTime().year().get
 
-        bar must be equalTo(
+        bar must be equalTo
           s"""{
-            |  "titles" : [ "My title", "My second title" ],
+            |  "titles" : [ {
+            |    "title" : "My title"
+            |  }, {
+            |    "title" : "My second title"
+            |  } ],
             |  "creators" : [ {
             |    "creatorName" : "Dobbo, Bob",
             |    "familyName" : "Dobbo",
@@ -28,7 +32,7 @@ class DataCiteSpec extends Specification{
             |  } ],
             |  "publisher" : "Materials Data Facility",
             |  "publicationYear" : "$currentYear"
-            |}""".stripMargin)
+            |}""".stripMargin
       }
     }
   }
@@ -100,6 +104,115 @@ class DataCiteSpec extends Specification{
         Seq("Me too"), None, None, Some(1776), None, None, None, None))
       "Then I should my publisher extracted correctly">>{
         (json\"publicationYear").as[String] must be equalTo("1776")
+      }
+    }
+  }
+
+  "Given the desscription is provided">> {
+    "When I generate JSON" >> {
+      val json = DataCite.dataCiteWrites.writes(new DataCite(Seq("My title"),
+        Seq("Me too"), None, None, Some(1776), None, Some("My description"), None, None))
+      "Then I should see the description property encoded" >> {
+        Json.prettyPrint(json) must be equalTo
+          """{
+            |  "titles" : [ {
+            |    "title" : "My title"
+            |  } ],
+            |  "creators" : [ {
+            |    "creatorName" : "too, Me",
+            |    "familyName" : "too",
+            |    "givenName" : "Me"
+            |  } ],
+            |  "publisher" : "Materials Data Facility",
+            |  "publicationYear" : "1776",
+            |  "descriptions" : [ {
+            |    "description" : "My description",
+            |    "descriptionType" : "Other"
+            |  } ]
+            |}""".stripMargin
+      }
+    }
+  }
+
+  "Given the resource type is provided">> {
+    "When I generate JSON" >> {
+      val json = DataCite.dataCiteWrites.writes(new DataCite(Seq("My title"),
+        Seq("Me too"), None, None, Some(1776), Some("Resource type"), None, None, None))
+      "Then I should see the description property encoded" >> {
+        Json.prettyPrint(json) must be equalTo
+          """{
+            |  "titles" : [ {
+            |    "title" : "My title"
+            |  } ],
+            |  "creators" : [ {
+            |    "creatorName" : "too, Me",
+            |    "familyName" : "too",
+            |    "givenName" : "Me"
+            |  } ],
+            |  "publisher" : "Materials Data Facility",
+            |  "publicationYear" : "1776",
+            |  "resourceType" : {
+            |    "resourceType" : "Resource type",
+            |    "resourceTypeGeneral" : "Dataset"
+            |  }
+            |}""".stripMargin
+      }
+    }
+  }
+
+  "Given the DOI is provided">> {
+    "When I generate JSON" >> {
+      val json = DataCite.dataCiteWrites.writes(new DataCite(Seq("My title"),
+        Seq("Me too"), None, None, Some(1776), None, None, Some("123-456"), None))
+      "Then I should see the description property encoded" >> {
+        Json.prettyPrint(json) must be equalTo
+          """{
+            |  "titles" : [ {
+            |    "title" : "My title"
+            |  } ],
+            |  "creators" : [ {
+            |    "creatorName" : "too, Me",
+            |    "familyName" : "too",
+            |    "givenName" : "Me"
+            |  } ],
+            |  "publisher" : "Materials Data Facility",
+            |  "publicationYear" : "1776",
+            |  "identifier" : {
+            |    "identifier" : "123-456",
+            |    "identifierType" : "DOI"
+            |  }
+            |}""".stripMargin
+      }
+    }
+  }
+
+  "Given related DOIs are provided">> {
+    "When I generate JSON" >> {
+      val json = DataCite.dataCiteWrites.writes(new DataCite(Seq("My title"),
+        Seq("Me too"), None, None, Some(1776), None, None, None, Some(Seq("123","456"))))
+      "Then I should see the description property encoded" >> {
+        Json.prettyPrint(json) must be equalTo
+          """{
+            |  "titles" : [ {
+            |    "title" : "My title"
+            |  } ],
+            |  "creators" : [ {
+            |    "creatorName" : "too, Me",
+            |    "familyName" : "too",
+            |    "givenName" : "Me"
+            |  } ],
+            |  "publisher" : "Materials Data Facility",
+            |  "publicationYear" : "1776",
+            |  "relatedIdentifiers" : [ {
+            |    "relatedIdentifier" : "123",
+            |    "relatedIdentifierType" : "DOI",
+            |    "relationType" : "IsPartOf"
+            |  }, {
+            |    "relatedIdentifier" : "456",
+            |    "relatedIdentifierType" : "DOI",
+            |    "relationType" : "IsPartOf"
+            |  } ]
+            |}""".stripMargin
       }
     }
   }

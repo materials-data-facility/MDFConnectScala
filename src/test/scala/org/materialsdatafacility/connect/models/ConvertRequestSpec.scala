@@ -12,10 +12,12 @@ class ConvertRequestSpec extends Specification {
       val json = ConvertRequest.convertRequestWrites.writes(convertRequest)
       "Then it should be formatted correctly" >>{
         val result = Json.prettyPrint(json)
-        result must be equalTo(
+        result must be equalTo
           """{
             |  "dc" : {
-            |    "titles" : [ "My title" ],
+            |    "titles" : [ {
+            |      "title" : "My title"
+            |    } ],
             |    "creators" : [ {
             |      "creatorName" : "Dobbo, Bob",
             |      "familyName" : "Dobbo",
@@ -27,7 +29,6 @@ class ConvertRequestSpec extends Specification {
             |  "data" : [ "http://foo.com/bar", "http://bar.com/foo" ],
             |  "test" : false
             |}""".stripMargin
-        )
       }
     }
   }
@@ -40,10 +41,12 @@ class ConvertRequestSpec extends Specification {
       val json = ConvertRequest.convertRequestWrites.writes(convertRequest)
       "Then it should default to true" >>{
         val result = Json.prettyPrint(json)
-        result must be equalTo(
+        result must be equalTo
           """{
             |  "dc" : {
-            |    "titles" : [ "My title" ],
+            |    "titles" : [ {
+            |      "title" : "My title"
+            |    } ],
             |    "creators" : [ {
             |      "creatorName" : "Dobbo, Bob",
             |      "familyName" : "Dobbo",
@@ -55,7 +58,6 @@ class ConvertRequestSpec extends Specification {
             |  "data" : [ "http://foo.com/bar" ],
             |  "test" : true
             |}""".stripMargin
-          )
       }
     }
   }
