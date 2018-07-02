@@ -18,4 +18,6 @@ libraryDependencies += "org.specs2" %% "specs2-mock" % "3.10.0" % Test
 
 libraryDependencies += "org.mockito" % "mockito-inline" % "2.7.22" % Test
 
+//coverageExcludedPackages := "<empty>;Reverse.*;controllers.javascript.*;models\\.data\\..*;models.daos.*;modules.*;router.*; utils.auth.*;utils.Filters; views.*;services.adaptors.*"
+
 scalacOptions in Test ++= Seq("-Yrangepos")
