@@ -1,9 +1,13 @@
 package org.materialsdatafacility.connect.models
 
-import play.api.http.Writeable
 import play.api.libs.json._
-import play.api.mvc.Codec
 
+/**
+  * Case class to represent a single request to injest data by MDF Connect
+  * @param dataCite Data citation for the dataset
+  * @param data List of URLs where MDF Connect can download data
+  * @param test Is this a test run, or the real thing?
+  */
 case class ConvertRequest(dataCite: DataCite, data: Seq[String], test: Option[Boolean])
 
 object ConvertRequest {

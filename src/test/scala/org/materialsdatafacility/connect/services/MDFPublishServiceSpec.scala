@@ -1,18 +1,23 @@
 package org.materialsdatafacility.connect.services
 
+import java.net.URL
+
 import com.ning.http.client.Realm.AuthScheme
-import org.materialsdatafacility.connect.models.AccessToken
+import org.materialsdatafacility.connect.models.{AccessToken, ConvertRequest, DataCite}
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import play.api.http.{ContentTypeOf, Writeable}
 import play.api.libs.ws.{Response, WS}
 import play.api.libs.ws.WS.WSRequestHolder
 import play.api.http.Status
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import org.mockito
+import org.mockito.ArgumentMatchers.{eq => eqTo, _}
+import org.specs2.matcher.Matchers
 
 class MDFPublishServiceSpec extends Specification with Mockito {
   val clientId = "123-456-7890"
@@ -47,7 +52,7 @@ class MDFPublishServiceSpec extends Specification with Mockito {
       "then I should receive a success response" >> {
         val ws = generateAuthMocks(Status.OK, validJsonResult)
 
-        val mdfConnect = new MDFPublishService(ws, clientId, secret)
+        val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
         val resultFuture = mdfConnect.authenticate()
 
         val result = Await.result(resultFuture, 10 seconds)
@@ -77,7 +82,7 @@ class MDFPublishServiceSpec extends Specification with Mockito {
             """.stripMargin)
           val ws = generateAuthMocks(Status.OK, invalidJsonResult)
 
-          val mdfConnect = new MDFPublishService(ws, clientId, secret)
+          val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
           val resultFuture = mdfConnect.authenticate()
 
           val result = Await.result(resultFuture, 10 seconds)
@@ -90,16 +95,30 @@ class MDFPublishServiceSpec extends Specification with Mockito {
       "then I should receive a failure response" >> {
         val ws = generateAuthMocks(Status.FORBIDDEN, validJsonResult)
 
-        val mdfConnect = new MDFPublishService(ws, clientId, secret)
+        val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
         val resultFuture = mdfConnect.authenticate()
 
         val result = Await.result(resultFuture, 10 seconds)
         result must beAFailedTry[AccessToken]
       }
     }
+
+    "And there is an MDF Connect service is down" >> {
+      "When I attempt to authenticate with a invalid  secret" >> {
+        "then I should receive a failure response" >> {
+          val ws = generateAuthMocks(Status.GONE, validJsonResult)
+
+          val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
+          val resultFuture = mdfConnect.authenticate()
+
+          val result = Await.result(resultFuture, 10 seconds)
+          result must beAFailedTry[AccessToken]
+        }
+      }
+    }
   }
 
-  "Given an MDF Publish service with an invalid URL" >> {
+  "Given an MDF Publish service with an invalid Globus Auth URL" >> {
     "When I attempt to authenticate" >> {
       "Then it should fail" >> {
         val ws = mock[WS.type]
@@ -110,12 +129,64 @@ class MDFPublishServiceSpec extends Specification with Mockito {
           wsWithURL.withAuth(clientId, secret, AuthScheme.BASIC).returns(wsWithAuth)
           ws.url("https://BADURL").returns(wsWithURL)
           wsWithAuth.post(anyMap)(anyObject[Writeable[Map[_, Any]]], anyObject[ContentTypeOf[Map[_, Any]]]).returns(Future.failed(new Exception("bad url")))
-          val mdfConnect = new MDFPublishService(ws, clientId, secret)
+          val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
           val resultFuture = mdfConnect.authenticate()
         } must throwA[Exception]
       }
     }
   }
+
+  "Given an MDF Publish Service">>{
+    val ws = mock[WS.type]
+    val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
+    "when I submit a convert request">> {
+      val dc = new DataCite(Seq("My title"), Seq("Bob Dobbo"), None, None, Some(1984), None, None, None, None)
+      val convertRequest = new ConvertRequest(dc, Seq("http://foo.com/bar", "http://bar.com/foo"), Some(false))
+      val accessToken = new AccessToken("aTOKEN", "scopescopescope", 42, "resource", "bearer")
+
+      val wsWithURL = mock[WSRequestHolder]
+      val wsWithHeaders = mock[WSRequestHolder]
+      val response = mock[Response]
+
+
+      ws.url("http://www.mdf.com").returns(wsWithURL)
+      wsWithURL.withHeaders("Authorization" -> "aTOKEN").returns(wsWithHeaders)
+      wsWithHeaders.post(anyObject[JsObject])(anyObject[Writeable[JsObject]], anyObject[ContentTypeOf[JsObject]]).returns(Future(response))
+      response.status.returns(Status.ACCEPTED)
+      response.json.returns(JsObject(Seq("ok" -> JsString("ok"))))
+      val resultFuture = mdfConnect.submitConvertRequest(convertRequest, accessToken)
+      "then I should receive a success response" >> {
+        val result = Await.result(resultFuture, 10 seconds)
+        result must beSuccessfulTry[String]
+      }
+    }
+  }
+
+  "Given an MDF Publish Service">>{
+    val ws = mock[WS.type]
+    val mdfConnect = new MDFPublishService(ws, clientId, secret, new URL("http://www.mdf.com"))
+    "when I submit an invalid convert request">> {
+      val dc = new DataCite(Seq(""), Seq(""), None, None, Some(1984), None, None, None, None)
+      val convertRequest = new ConvertRequest(dc, Seq("http://foo.com/bar", "http://bar.com/foo"), Some(false))
+      val accessToken = new AccessToken("aTOKEN", "scopescopescope", 42, "resource", "bearer")
+
+      val wsWithURL = mock[WSRequestHolder]
+      val wsWithHeaders = mock[WSRequestHolder]
+      val response = mock[Response]
+
+
+      ws.url("http://www.mdf.com").returns(wsWithURL)
+      wsWithURL.withHeaders("Authorization" -> "aTOKEN").returns(wsWithHeaders)
+      wsWithHeaders.post(anyObject[JsObject])(anyObject[Writeable[JsObject]], anyObject[ContentTypeOf[JsObject]]).returns(Future(response))
+      response.status.returns(Status.BAD_REQUEST)
+      val resultFuture = mdfConnect.submitConvertRequest(convertRequest, accessToken)
+      "then I should receive a success response" >> {
+        val result = Await.result(resultFuture, 10 seconds)
+        result must beFailedTry[String]
+      }
+    }
+  }
+
 
   def generateAuthMocks(resultStatus: Int, resultJson: JsValue): WS.type = {
     val ws = mock[WS.type]
@@ -131,5 +202,4 @@ class MDFPublishServiceSpec extends Specification with Mockito {
     response.json returns resultJson
     ws
   }
-
 }

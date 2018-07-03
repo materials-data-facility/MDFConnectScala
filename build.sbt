@@ -1,9 +1,13 @@
 
 import sbt.{TestFrameworks, Tests}
 
-name := "MDFConnect"
+name := "MDFConnectScala"
 
-version := "0.1"
+organization := "org.materialsdatafacility.mdfconnect"
+
+description := "Scala bindings for MDF Connect Service"
+
+version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.10.6"
 
@@ -18,6 +22,21 @@ libraryDependencies += "org.specs2" %% "specs2-mock" % "3.10.0" % Test
 
 libraryDependencies += "org.mockito" % "mockito-inline" % "2.7.22" % Test
 
-//coverageExcludedPackages := "<empty>;Reverse.*;controllers.javascript.*;models\\.data\\..*;models.daos.*;modules.*;router.*; utils.auth.*;utils.Filters; views.*;services.adaptors.*"
+publishTo := Some("Sonatype Snapshots Nexus" at "https://oss.sonatype.org/content/repositories/snapshots")
+
+credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+
+pomIncludeRepository := { _ => false }
+
+licenses := Seq("Apache" -> url("https://opensource.org/licenses/Apache-2.0"))
+
+homepage := Some(url("https://materialsdatafacility.org"))
+
+scmInfo := Some(
+  ScmInfo(
+    url("https://github.com/materials-data-facility/MDFConnectScala"),
+    "scm:git@github.com:materials-data-facility/MDFConnectScala.git"
+  )
+)
 
 scalacOptions in Test ++= Seq("-Yrangepos")
