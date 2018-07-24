@@ -7,7 +7,7 @@ organization := "org.materialsdatafacility.mdfconnect"
 
 description := "Scala bindings for MDF Connect Service"
 
-version := "1.0-SNAPSHOT"
+version := "1.0"
 
 scalaVersion := "2.10.6"
 
@@ -22,7 +22,13 @@ libraryDependencies += "org.specs2" %% "specs2-mock" % "3.10.0" % Test
 
 libraryDependencies += "org.mockito" % "mockito-inline" % "2.7.22" % Test
 
-publishTo := Some("Sonatype Snapshots Nexus" at "https://oss.sonatype.org/content/repositories/snapshots")
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "content/repositories/releases")
+}
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
