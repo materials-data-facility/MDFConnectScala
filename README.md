@@ -8,6 +8,10 @@ In order to use this library you will require a client id and secret. This
 can be obtained from [Globus](https://www.globus.org). You will then need to
 contact the MDF team to grant your account permission to publish via the API.
 
+We currently only support _confidential client_ authentication. This is
+appropriate for a back-end service, however future versions of this library
+should support the same OAuth flows exposed by the Python SDK.
+ 
 This library uses the Scala Play WS module to perform all of the REST calls.
 
 # How to Use
